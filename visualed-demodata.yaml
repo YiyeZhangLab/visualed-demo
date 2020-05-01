@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demodata-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demodata
+  template:
+    metadata:
+      labels:
+        app: demodata
+    spec:
+      containers:
+        - name: demodata
+          image: axytech/dashboarddemodata
+          imagePullPolicy: "Always"
+          volumeMounts:
+            - name: tz-config
+              mountPath: /etc/localtime
+            - name: es-demo-data
+              mountPath: /demo-es-snapshot
+      volumes:
+        - name: es-demo-data
+          persistentVolumeClaim:
+            claimName: data-pv-claim
+        - name: tz-config
+          hostPath:
+            path: /usr/share/zoneinfo/America/New_York

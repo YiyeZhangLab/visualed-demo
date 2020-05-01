@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:7.6.2
+          env:
+            - name: discovery.type
+              value: single-node
+            - name: path.repo
+              value: /demo-es-snapshot
+          ports:
+            - containerPort: 9200
+              name: client
+            - containerPort: 9300
+              name: nodes
+          volumeMounts:
+            - name: es-persistent-storage
+              mountPath: /usr/share/elasticsearch/data
+            - name: es-demo-data
+              mountPath: /demo-es-snapshot
+
+      volumes:
+        - name: es-persistent-storage
+          persistentVolumeClaim:
+            claimName: es-pv-claim
+        - name: es-demo-data
+          persistentVolumeClaim:
+            claimName: data-pv-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch-svc
+  labels:
+    service: elasticsearch
+spec:
+  ports:
+    - port: 9200
+      name: client
+    - port: 9300
+      name: nodes
+  selector:
+    app: elasticsearch
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: es-pv-claim
+  labels:
+    app: elasticsearch
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-pv-claim
+  labels:
+    app: data
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Mi
